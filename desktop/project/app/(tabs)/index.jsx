@@ -12,6 +12,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mail, Lock, Eye, EyeOff, UserPlus } from 'lucide-react-native';
+import { createClient } from '@supabase/supabase-js';
+
+// TODO: Replace with your actual Supabase URL and anon key
+const SUPABASE_URL = 'https://hlwgpwqdviwtwqnuhyee.supabase.co'; // e.g., 'https://your-project.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhsd2dwd3Fkdml3dHdxbnVoeWVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2ODQ5NjIsImV4cCI6MjA2NzI2MDk2Mn0.IefZhUj-LFK7znoAGALJdAKB2FJpOPg-0ZyODYoiXHk'; // Your public anon key
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('');
@@ -61,15 +68,63 @@ export default function SignupScreen() {
 
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Step 1: Sign up the user with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      // Step 2: If auth signup is successful, add user to our custom users table
+      if (authData.user) {
+        const { data: userData, error: userError } = await supabase.from('users').insert([
+            {
+              id: authData.user.id, // Use the same ID from auth
+              email: email,
+              created_at: new Date().toISOString(),
+              email_verified: false, // Will be true after email confirmation
+            }
+          ]);
+
+        if (userError) {
+          // If user table insertion fails, we should clean up the auth user
+          console.error('Error inserting user data:', userError);
+          throw new Error('Failed to create user profile');
+        }
+
+        Alert.alert(
+          'Success!',
+          'Your account has been created successfully. Please check your email to verify your account before signing in.',
+          [{ text: 'OK' }]
+        );
+      }
+
+    } catch (error) {
+      console.error('Signup error:', error);
+      
+      // Handle specific error cases
+      if (error.message.includes('User already registered')) {
+        Alert.alert(
+          'Account Exists',
+          'An account with this email already exists. Please try signing in instead.',
+          [{ text: 'OK' }]
+        );
+      } else if (error.message.includes('Password should be at least 6 characters')) {
+        setErrors({ password: 'Password must be at least 6 characters long' });
+      } else {
+        Alert.alert(
+          'Error',
+          error.message || 'An error occurred during signup. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
+    } finally {
       setIsLoading(false);
-      Alert.alert(
-        'Success!',
-        'Your account has been created successfully. Welcome to UCSC Carpooling!',
-        [{ text: 'OK' }]
-      );
-    }, 2000);
+    }
   };
 
   return (
@@ -173,7 +228,7 @@ export default function SignupScreen() {
               disabled={isLoading}>
               <UserPlus size={20} color="#FFFFFF" style={styles.buttonIcon} />
               <Text style={styles.signupButtonText}>
-                {isLoading ? 'Creating Account...' : 'Sign Up'}
+                {isLoading ? 'Creating account...' : 'Sign Up'}
               </Text>
             </TouchableOpacity>
 
