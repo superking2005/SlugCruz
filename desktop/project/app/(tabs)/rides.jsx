@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect } from 'react';
 import { View, Text, Button, FlatList, TextInput, StyleSheet, ScrollView } from 'react-native';
 import { supabase } from '../../lib/supabase'; 
@@ -11,20 +9,22 @@ export default function RidesScreen() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [seats, setSeats] = useState('');
+  const [phone, setPhone] = useState(''); // ✅ New state for phone
 
   // State for all rides
   const [rides, setRides] = useState([]);
 
-  //  Post a new ride (Driver)
+  // ✅ Post a new ride (Driver)
   const postRide = async () => {
     const { data, error } = await supabase.from('rides').insert([
       {
-        driver_id: 'driver_123', 
+        driver_id: 'driver_123', // static ID for now
         from_location: from,
         to_location: to,
         date,
         time,
         seats: Number(seats),
+        phone: phone, // ✅ Add phone number to insert
       },
     ]);
     if (error) {
@@ -33,15 +33,21 @@ export default function RidesScreen() {
     } else {
       alert('Ride posted!');
       fetchRides(); // refresh list
+      setFrom('');
+      setTo('');
+      setDate('');
+      setTime('');
+      setSeats('');
+      setPhone(''); // ✅ Clear phone input too
     }
   };
 
-  //  Book a ride (Rider)
+  // Book a ride (Rider)
   const bookRide = async (rideId) => {
     const { data, error } = await supabase.from('ride_signups').insert([
       {
         ride_id: rideId,
-        rider_id: 'rider_456', 
+        rider_id: 'rider_456', // static ID for now
       },
     ]);
     if (error) {
@@ -52,7 +58,7 @@ export default function RidesScreen() {
     }
   };
 
-  //  Fetch available rides (Rider)
+  // Fetch available rides (Rider)
   const fetchRides = async () => {
     const { data, error } = await supabase.from('rides').select('*');
     if (error) {
@@ -81,6 +87,13 @@ export default function RidesScreen() {
         onChangeText={setSeats}
         keyboardType="numeric"
       />
+      <TextInput
+        style={styles.input}
+        placeholder="Phone Number"
+        value={phone}
+        onChangeText={setPhone}
+        keyboardType="phone-pad"
+      />
 
       <Button title="Post Ride" onPress={postRide} />
 
@@ -94,6 +107,7 @@ export default function RidesScreen() {
             <Text>{item.from_location} → {item.to_location}</Text>
             <Text>{item.date} at {item.time}</Text>
             <Text>Seats: {item.seats}</Text>
+            <Text>Phone: {item.phone || 'N/A'}</Text> {/* ✅ Show phone */}
             <Button title="Book Ride" onPress={() => bookRide(item.id)} />
           </View>
         )}
