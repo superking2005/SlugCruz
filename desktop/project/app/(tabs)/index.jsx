@@ -11,6 +11,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mail, Lock, Eye, EyeOff, UserPlus } from 'lucide-react-native';
@@ -150,7 +151,7 @@ export default function SignupScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <Text style={styles.logoEmoji}>🐌</Text>
+              <Image source={require('../../assets/images/favicon.png')} style={styles.logoImage} />
               <Text style={styles.logoText}>UCSC Carpooling</Text>
             </View>
             <Text style={styles.subtitle}>
@@ -288,15 +289,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  logoEmoji: {
-    fontSize: 60,
-    marginBottom: 8,
-  },
   logoText: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#1F2937',
   },
+  logoImage: {
+    width: 100,
+    height: 100,
+    marginBottom: 8,
+  }
+  ,
   subtitle: {
     fontSize: 16,
     color: '#6B7280',
