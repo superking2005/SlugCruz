@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mail, Lock, Eye, EyeOff, UserPlus } from 'lucide-react-native';
 import { createClient } from '@supabase/supabase-js';
+import { Link } from 'expo-router';
 
 // TODO: Replace with your actual Supabase URL and anon key
 const SUPABASE_URL = 'https://hlwgpwqdviwtwqnuhyee.supabase.co'; // e.g., 'https://your-project.supabase.co'
@@ -254,7 +255,9 @@ export default function SignupScreen() {
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Already have an account?{' '}
-              <Text style={styles.footerLink}>Sign In</Text>
+<Link href="/signin" style={styles.footerLink}>
+  Sign In
+</Link>
             </Text>
           </View>
         </ScrollView>

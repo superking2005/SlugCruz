@@ -1,14 +1,34 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Button, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
 export default function HomeScreen() {
   return (
+                    <View style={styles.fullScreenContainer}>
+
+
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>🐌 Welcome to UCSC Carpooling!</Text>
         <Text style={styles.subtitle}>Find rides and connect with fellow Banana Slugs</Text>
       </View>
     </SafeAreaView>
+
+            
+              <View style={styles.navBar}>
+                <View style={styles.navButtonContainer}>
+                  <Button title="Home" onPress={() => router.push('/home')}/>
+                </View>
+                <View style={styles.navButtonContainer}>
+                  <Button title="Messages" onPress={() => router.push('/messages')}/>
+                </View>
+                <View style={styles.navButtonContainer}>
+                  <Button title="Rides" onPress={() => router.push('/rides')}/>
+                </View>
+              </View>
+    
+              </View>
+    
   );
 }
 

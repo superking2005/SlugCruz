@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { View, Text, Button, FlatList, TextInput, StyleSheet, ScrollView } from 'react-native';
-import { supabase } from '../../lib/supabase'; 
+import { supabase } from '../../lib/supabase';
+import { router } from 'expo-router';
+
 
 export default function RidesScreen() {
   // States for driver ride input
@@ -9,12 +11,12 @@ export default function RidesScreen() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [seats, setSeats] = useState('');
-  const [phone, setPhone] = useState(''); // ✅ New state for phone
+  const [phone, setPhone] = useState('');
 
   // State for all rides
   const [rides, setRides] = useState([]);
 
-  // ✅ Post a new ride (Driver)
+  // Post a new ride (Driver)
   const postRide = async () => {
     const { data, error } = await supabase.from('rides').insert([
       {
@@ -24,7 +26,7 @@ export default function RidesScreen() {
         date,
         time,
         seats: Number(seats),
-        phone: phone, // ✅ Add phone number to insert
+        phone: phone,
       },
     ]);
     if (error) {
@@ -38,7 +40,7 @@ export default function RidesScreen() {
       setDate('');
       setTime('');
       setSeats('');
-      setPhone(''); // ✅ Clear phone input too
+      setPhone('');
     }
   };
 
@@ -73,52 +75,77 @@ export default function RidesScreen() {
   }, []);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Post a Ride (Driver)</Text>
+    // ✅ Wrap everything in a View with flex: 1 to contain both the content and the nav bar
+    <View style={styles.fullScreenContainer}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.header}>Post a Ride (Driver)</Text>
 
-      <TextInput style={styles.input} placeholder="From" value={from} onChangeText={setFrom} />
-      <TextInput style={styles.input} placeholder="To" value={to} onChangeText={setTo} />
-      <TextInput style={styles.input} placeholder="Date (e.g., 2025-07-10)" value={date} onChangeText={setDate} />
-      <TextInput style={styles.input} placeholder="Time (e.g., 14:30)" value={time} onChangeText={setTime} />
-      <TextInput
-        style={styles.input}
-        placeholder="Seats Available"
-        value={seats}
-        onChangeText={setSeats}
-        keyboardType="numeric"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Phone Number"
-        value={phone}
-        onChangeText={setPhone}
-        keyboardType="phone-pad"
-      />
+        <TextInput style={styles.input} placeholder="From" value={from} onChangeText={setFrom} />
+        <TextInput style={styles.input} placeholder="To" value={to} onChangeText={setTo} />
+        <TextInput style={styles.input} placeholder="Date (e.g., 2025-07-10)" value={date} onChangeText={setDate} />
+        <TextInput style={styles.input} placeholder="Time (e.g., 14:30)" value={time} onChangeText={setTime} />
+        <TextInput
+          style={styles.input}
+          placeholder="Seats Available"
+          value={seats}
+          onChangeText={setSeats}
+          keyboardType="numeric"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Phone Number"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+        />
 
-      <Button title="Post Ride" onPress={postRide} />
+        <Button title="Post Ride" onPress={postRide} />
 
-      <Text style={styles.header}>Available Rides</Text>
+        <Text style={styles.header}>Available Rides</Text>
 
-      <FlatList
-        data={rides}
-        keyExtractor={(item) => item.id?.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.rideCard}>
-            <Text>{item.from_location} → {item.to_location}</Text>
-            <Text>{item.date} at {item.time}</Text>
-            <Text>Seats: {item.seats}</Text>
-            <Text>Phone: {item.phone || 'N/A'}</Text> {/* ✅ Show phone */}
-            <Button title="Book Ride" onPress={() => bookRide(item.id)} />
-          </View>
-        )}
-      />
-    </ScrollView>
+        <FlatList
+          // Using scrollEnabled={false} can help if you experience nested scroll issues,
+          // but it's often not necessary with this layout.
+          scrollEnabled={false}
+          data={rides}
+          keyExtractor={(item) => item.id?.toString()}
+          renderItem={({ item }) => (
+            <View style={styles.rideCard}>
+              <Text>{item.from_location} → {item.to_location}</Text>
+              <Text>{item.date} at {item.time}</Text>
+              <Text>Seats: {item.seats}</Text>
+              <Text>Phone: {item.phone || 'N/A'}</Text>
+              <Button title="Book Ride" onPress={() => bookRide(item.id)} />
+            </View>
+          )}
+        />
+      </ScrollView>
+
+      {/* ✅ New Navigation Bar at the bottom */}
+      <View style={styles.navBar}>
+        <View style={styles.navButtonContainer}>
+          <Button title="Home" onPress={() => router.push('/home')}/>
+        </View>
+        <View style={styles.navButtonContainer}>
+          <Button title="Messages" onPress={() => router.push('/messages')}/>
+        </View>
+        <View style={styles.navButtonContainer}>
+          <Button title="Profile" onPress={() => router.push('/profile')}/>
+        </View>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // ✅ New style to ensure the main view takes up the whole screen
+  fullScreenContainer: {
+    flex: 1,
+  },
   container: {
     padding: 20,
+    // ✅ Add padding to the bottom to ensure last item is not hidden behind the nav bar
+    paddingBottom: 100,
   },
   header: {
     fontSize: 20,
@@ -137,5 +164,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 10,
+  },
+  // ✅ Styles for the new navigation bar
+  navBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
+    backgroundColor: '#f8f8f8',
+    // These position it at the bottom of the parent View
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  // ✅ Wrapper for each button to help with layout
+  navButtonContainer: {
+    flex: 1,
+    marginHorizontal: 4,
   },
 });
