@@ -254,10 +254,10 @@ export default function SignupScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Already have an account?{' '}
-<Link href="/signin" style={styles.footerLink}>
-  Sign In
-</Link>
+                        Already have an account?{' '}
+          <Link href="/signin" style={styles.footerLink}>
+            Sign In
+          </Link>
             </Text>
           </View>
         </ScrollView>
