@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -100,6 +102,13 @@ export default function SignupScreen() {
           'Success!',
           'Your account has been created successfully. Please check your email to verify your account before signing in.',
           [{ text: 'OK' }]
+          [{ 
+          text: 'OK', 
+          onPress: async () => {
+            await AsyncStorage.setItem('isSignedUp', 'true');
+            router.replace('/home');
+          }
+        }]
         );
       }
 
@@ -124,6 +133,7 @@ export default function SignupScreen() {
       }
     } finally {
       setIsLoading(false);
+      router.push('/rides');
     }
   };
 

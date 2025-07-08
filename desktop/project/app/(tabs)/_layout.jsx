@@ -1,7 +1,27 @@
 import { Tabs } from 'expo-router';
 import { UserPlus, Chrome as Home, Car, MessageCircle, User } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useState, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 export default function TabLayout() {
+  const [isSignedUp, setIsSignedUp] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      checkSignupStatus();
+    }, [])
+  );
+
+  const checkSignupStatus = async () => {
+    try {
+      const signupStatus = await AsyncStorage.getItem('isSignedUp');
+      setIsSignedUp(signupStatus === 'true');
+    } catch (error) {
+      console.error('Error checking signup status:', error);
+    }
+  };
   return (
     <Tabs
       screenOptions={{
@@ -24,6 +44,7 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => (
             <UserPlus size={size} color={color} />
           ),
+          href: isSignedUp ? null : undefined,
         }}
       />
       <Tabs.Screen
@@ -33,6 +54,7 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => (
             <Home size={size} color={color} />
           ),
+          href: !isSignedUp ? null : undefined,
         }}
       />
       <Tabs.Screen
@@ -42,6 +64,7 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => (
             <Car size={size} color={color} />
           ),
+          href: !isSignedUp ? null : undefined,
         }}
       />
       <Tabs.Screen
@@ -51,6 +74,7 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => (
             <MessageCircle size={size} color={color} />
           ),
+          href: !isSignedUp ? null : undefined,
         }}
       />
       <Tabs.Screen
@@ -60,6 +84,7 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => (
             <User size={size} color={color} />
           ),
+          href: !isSignedUp ? null : undefined,
         }}
       />
     </Tabs>
