@@ -48,6 +48,36 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="signin"
+        options={{
+          title: 'Login',
+          tabBarIcon: ({ size, color }) => (
+            <Home size={size} color={color} />
+          ),
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="terms"
+        options={{
+          title: 'Terms and Conditions',
+          tabBarIcon: ({ size, color }) => (
+            <Home size={size} color={color} />
+          ),
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="policy"
+        options={{
+          title: 'Privacy Policy',
+          tabBarIcon: ({ size, color }) => (
+            <Home size={size} color={color} />
+          ),
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="home"
         options={{
           title: 'Home',

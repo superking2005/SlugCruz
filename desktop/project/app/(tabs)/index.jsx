@@ -244,11 +244,16 @@ export default function SignupScreen() {
               </Text>
             </TouchableOpacity>
 
-            {/* Terms */}
+            {/* Terms & Policy*/}
             <Text style={styles.termsText}>
               By signing up, you agree to our{' '}
-              <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
-              <Text style={styles.termsLink}>Privacy Policy</Text>
+              <TouchableOpacity onPress={() => router.push('/terms')}>
+                <Text style={styles.termsLink}>Terms of Service</Text> 
+              </TouchableOpacity>{' '}
+              and{' '}
+              <TouchableOpacity onPress={() => router.push('/policy')}>
+                <Text style={styles.termsLink}>Privacy Policy</Text>
+              </TouchableOpacity>
             </Text>
           </View>
 
