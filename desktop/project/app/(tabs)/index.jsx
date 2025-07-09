@@ -262,7 +262,9 @@ export default function SignupScreen() {
             <Text style={styles.footerText}>
                         Already have an account?{' '}
           <Link href="/signin" style={styles.footerLink}>
-            Sign In
+            <TouchableOpacity>
+              Sign In
+            </TouchableOpacity>
           </Link>
             </Text>
           </View>
