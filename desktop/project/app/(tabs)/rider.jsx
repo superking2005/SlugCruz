@@ -25,7 +25,6 @@ export default function RidesScreen() {
         to_location: to,
         date,
         time,
-        seats: Number(seats),
         phone: phone,
       },
     ]);
@@ -48,7 +47,7 @@ export default function RidesScreen() {
   const bookRide = async (rideId) => {
     const { data, error } = await supabase.from('ride_signups').insert([
       {
-        ride_id: rideId,
+        ride_id: 'rideId',
         rider_id: 'rider_456', // static ID for now
       },
     ]);
@@ -78,19 +77,12 @@ export default function RidesScreen() {
     // ✅ Wrap everything in a View with flex: 1 to contain both the content and the nav bar
     <View style={styles.fullScreenContainer}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.header}>Post a Ride (Driver)</Text>
+        <Text style={styles.header}>Post a Ride (Rider)</Text>
 
         <TextInput style={styles.input} placeholder="From" value={from} onChangeText={setFrom} />
         <TextInput style={styles.input} placeholder="To" value={to} onChangeText={setTo} />
         <TextInput style={styles.input} placeholder="Date (e.g., 2025-07-10)" value={date} onChangeText={setDate} />
         <TextInput style={styles.input} placeholder="Time (e.g., 14:30)" value={time} onChangeText={setTime} />
-        <TextInput
-          style={styles.input}
-          placeholder="Seats Available"
-          value={seats}
-          onChangeText={setSeats}
-          keyboardType="numeric"
-        />
         <TextInput
           style={styles.input}
           placeholder="Phone Number"
@@ -99,7 +91,7 @@ export default function RidesScreen() {
           keyboardType="phone-pad"
         />
 
-        <Button title="Post Ride" onPress={postRide} />
+        <Button title="Schedule Ride" onPress={postRide} />
 
         <Text style={styles.header}>Available Rides</Text>
 

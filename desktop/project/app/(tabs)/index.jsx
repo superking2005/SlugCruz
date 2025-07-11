@@ -135,7 +135,7 @@ export default function SignupScreen() {
       }
     } finally {
       setIsLoading(false);
-      router.push('/rides');
+      router.push('/driver');
     }
   };
 
