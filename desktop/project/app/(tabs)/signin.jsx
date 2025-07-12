@@ -47,7 +47,7 @@ export default function LoginScreen() {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
-        password,
+        password
       });
 
       if (error) {
@@ -60,7 +60,8 @@ export default function LoginScreen() {
       }
 
       Alert.alert('Success!', 'You are now logged in.');
-      // TODO: Navigate to the home screen or dashboard
+      // Navigate to the driver screen after successful login
+      navigation.navigate('driver');
     } catch (err) {
       Alert.alert('Login Error', err.message || 'Something went wrong');
     } finally {
