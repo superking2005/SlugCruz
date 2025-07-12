@@ -73,69 +73,48 @@ export default function SignupScreen() {
     setIsLoading(true);
     
     try {
-      // Step 1: Sign up the user with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Step 1: Sign up the user. The trigger should automatically handle the rest.
+      const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password,
       });
 
-      if (authError) {
-        throw authError;
+      if (error) {
+        throw error; 
       }
 
-      // Step 2: If auth signup is successful, add user to our custom users table
-      if (authData.user) {
-        const { data: userData, error: userError } = await supabase.from('users').insert([
-            {
-              id: authData.user.id, // Use the same ID from auth
-              email: email,
-              created_at: new Date().toISOString(),
-              email_verified: false, // Will be true after email confirmation
-            }
-          ]);
-
-        if (userError) {
-          // If user table insertion fails, we should clean up the auth user
-          console.error('Error inserting user data:', userError);
-          throw new Error('Failed to create user profile');
-        }
-
-        Alert.alert(
-          'Success!',
-          'Your account has been created successfully. Please check your email to verify your account before signing in.',
-          [{ text: 'OK' }]
-          [{ 
-          text: 'OK', 
-          onPress: async () => {
-            await AsyncStorage.setItem('isSignedUp', 'true');
-            router.replace('/home');
+      // If we reach here, the signup was started successfully.
+      Alert.alert(
+        'Success!',
+        'Your account has been created. Please check your UCSC email to verify your account before signing in.',
+        [
+          { 
+            text: 'OK', 
+            onPress: () => router.replace('/signin') 
           }
-        }]
-        );
-      }
+        ]
+      );
 
     } catch (error) {
       console.error('Signup error:', error);
       
-      // Handle specific error cases
       if (error.message.includes('User already registered')) {
         Alert.alert(
           'Account Exists',
           'An account with this email already exists. Please try signing in instead.',
           [{ text: 'OK' }]
         );
-      } else if (error.message.includes('Password should be at least 6 characters')) {
-        setErrors({ password: 'Password must be at least 6 characters long' });
+      } else if (error.message.includes('Password should be at least 8 characters')) {
+        setErrors(prev => ({ ...prev, password: 'Password is not strong enough.' }));
       } else {
         Alert.alert(
-          'Error',
+          'Signup Error',
           error.message || 'An error occurred during signup. Please try again.',
           [{ text: 'OK' }]
         );
       }
     } finally {
       setIsLoading(false);
-      router.push('/driver');
     }
   };
 
