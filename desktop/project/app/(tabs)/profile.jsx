@@ -1,45 +1,19 @@
-import { View, Text, Button, StyleSheet, Switch } from 'react-native';
+import { View, Text, Button, StyleSheet } from 'react-native';
+import {Switch as CustomSwitch} from 'react-native-switch';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useMode} from '../../context/ModeContext';
 
 export default function ProfileScreen() {
 
   // DRIVER RIDER TOGGLE ------------------------------------------------------------
-  const [isDriver, setIsDriver] = useState(false);
-
-  // load saved mode from storage
-  useEffect(() => {
-    const loadMode = async () => {
-      try {
-        const savedMode = await AsyncStorage.getItem('userMode');
-        if (savedMode !== null) {
-          setIsDriver(savedMode === 'driver');
-        }
-      } catch (err) {
-        console.error('Failed to load mode:', err);
-      }
-    };
-    loadMode();
-  }, []);
-
-  // Save mode when toggled
-  const toggleMode = async () => {
-    const newMode = !isDriver;
-    setIsDriver(newMode);
-    try {
-      await AsyncStorage.setItem('userMode', newMode ? 'driver' : 'rider');
-    } catch (err) {
-      console.error('Failed to save mode:', err);
-    }
-  };
+  const { isDriver, toggleMode } =useMode();
 
   // --------------------------------------------------------------------------------
   return (
-        <View style={styles.fullScreenContainer}>
+        <View style={[styles.fullScreenContainer ]}>
     
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{ backgroundColor: isDriver ? '#ffe077' : '#FEFCE8' }]}>
       <View style={styles.content}>
         <Text style={styles.title}>👤 Profile</Text>
         <Text style={styles.subtitle}>Manage your account and preferences</Text>
@@ -48,12 +22,20 @@ export default function ProfileScreen() {
             <Text style={styles.toggleLabel}>
               {isDriver ? 'Driver Mode' : 'Rider Mode'}
             </Text>
-            <Switch
-              value={isDriver}
-              onValueChange={toggleMode}
-              trackColor={{ false: '#d1d5db', true: '#10b981' }}
-              thumbColor={isDriver ? '#047857' : '#f3f4f6'}
-            />
+            <CustomSwitch
+            value={isDriver}
+            onValueChange={toggleMode}
+            backgroundActive="#92aaf9ff"
+            backgroundInactive="#d1d5db"
+            circleActiveColor="#4570ffff"
+            circleInActiveColor="#f3f4f6"
+            circleSize={26}
+            barHeight={28}
+            switchWidthMultiplier={2.2}
+            switchBorderRadius={20}
+            renderActiveText={false}
+            renderInActiveText={false}
+          />
           </View>
         {/* Driver Rider toggle -------------------------------------------------*/}
       </View>
@@ -68,6 +50,9 @@ export default function ProfileScreen() {
         <View style={styles.navButtonContainer}>
           <Button title="Rides" onPress={() => router.push('/rides')}/>
         </View>
+        <View style={styles.navButtonContainer}>
+          <Button title="Profile" onPress={() => router.push('/profile')}/>
+        </View>
       </View>
   
 
@@ -78,7 +63,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FEFCE8',
+    
   },
   content: {
     flex: 1,

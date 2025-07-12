@@ -4,6 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
+// Imports from context and safe area provider
+import { ModeProvider} from '../../context/ModeContext';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
   const [isSignedUp, setIsSignedUp] = useState(false);
@@ -23,6 +26,9 @@ export default function TabLayout() {
     }
   };
   return (
+    // Wrap the entire app in the ModeProvider
+    <ModeProvider>
+    <SafeAreaProvider>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -118,5 +124,7 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </SafeAreaProvider>
+    </ModeProvider>
   );
 }

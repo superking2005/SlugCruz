@@ -1,13 +1,18 @@
 import { View, Text, Button, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import {useMode} from '../../context/ModeContext';
 
 export default function HomeScreen() {
+  // DRIVER RIDER TOGGLE ------------------------------------------------------------
+  // this is how the driver rider is determined
+  const {isDriver} = useMode();
+  // --------------------------------------------------------------------------------
   return (
                     <View style={styles.fullScreenContainer}>
 
-
-    <SafeAreaView style={styles.container}>
+    {/* added isDriver to determine color of container*/}
+    <SafeAreaView style={[styles.container, { backgroundColor: isDriver ? '#ffe077' : '#FEFCE8' }]}>
       <View style={styles.content}>
         <Text style={styles.title}>🐌 Welcome to UCSC Carpooling!</Text>
         <Text style={styles.subtitle}>Find rides and connect with fellow Banana Slugs</Text>
@@ -24,6 +29,9 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.navButtonContainer}>
                   <Button title="Rides" onPress={() => router.push('/rides')}/>
+                </View>
+                <View style={styles.navButtonContainer}>
+                  <Button title="Profile" onPress={() => router.push('/profile')}/>
                 </View>
               </View>
     
