@@ -18,14 +18,43 @@ export default function RidesScreen() {
 
   // Post a new ride (Driver)
   const postRide = async () => {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData?.user?.id) {
+      console.error('User fetch error:', userError);
+      alert('You must be logged in to post a ride.');
+      return;
+    }
+
+    const userID = userData.user.id;
+    if (!userID) {
+      alert('User not logged in');
+    return;
+    }
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userID)
+      .single();
+
+    if (profileError && !profileData) {
+      // Profile not found, create one
+      const { error: createProfileError } = await supabase.from('profiles').insert([{ id: userID }]);
+      if (createProfileError) {
+        console.error('Error creating profile:', createProfileError);
+        alert('Failed to create user profile');
+        return;
+      }
+    }
     const { data, error } = await supabase.from('rides').insert([
       {
-        driver_id: 'driver_123', // static ID for now
+        posted_by: 'driver',
+        driver_id: userID,
         from_location: from,
         to_location: to,
         date: date,
         time: time,
-        seats: Number(seats),
+        available_seats: Number(seats),
         phone: phone,
       },
     ]);
@@ -62,7 +91,7 @@ export default function RidesScreen() {
 
   // Fetch available rides (Rider)
   const fetchRides = async () => {
-    const { data, error } = await supabase.from('rides').select('*');
+    const { data, error } = await supabase.from('rides').select('*').eq('posted_by', 'rider');
     if (error) {
       console.error(error);
     } else {
@@ -113,7 +142,7 @@ export default function RidesScreen() {
             <View style={styles.rideCard}>
               <Text>{item.from_location} → {item.to_location}</Text>
               <Text>{item.date} at {item.time}</Text>
-              <Text>Seats: {item.seats}</Text>
+              <Text>Seats: {item.available_seats}</Text>
               <Text>Phone: {item.phone || 'N/A'}</Text>
               <Button title="Book Ride" onPress={() => bookRide(item.id)} />
             </View>
