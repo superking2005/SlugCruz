@@ -5,12 +5,12 @@ import { useState, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 // Imports from context and safe area provider
-import { ModeProvider} from '../../context/ModeContext';
+import { useMode } from '../../context/ModeContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
   const [isSignedUp, setIsSignedUp] = useState(false);
-
+  const {isDriver} = useMode();
   useFocusEffect(
     useCallback(() => {
       checkSignupStatus();
@@ -26,8 +26,8 @@ export default function TabLayout() {
     }
   };
   return (
-    // Wrap the entire app in the ModeProvider
-    <ModeProvider>
+    // Wrap the entire app in the SafeAreaProvider
+    // _layout.tsx contains the ModeProvider wrapper
     <SafeAreaProvider>
     <Tabs
       screenOptions={{
@@ -50,7 +50,8 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => (
             <UserPlus size={size} color={color} />
           ),
-          href: isSignedUp ? null : undefined,
+          // undefined shows the tab, null hides it
+          href: !isSignedUp ? undefined : null,
         }}
       />
       <Tabs.Screen
@@ -90,19 +91,34 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => (
             <Home size={size} color={color} />
           ),
-          href: !isSignedUp ? null : undefined,
+          href: undefined,
         }}
       />
+      {/* conditionally preloading isDriver */}
+      if (isDriver || !Driver) {
       <Tabs.Screen
-        name="rides"
+        name="rider"
         options={{
-          title: 'Rides',
+          title: 'Rider',
           tabBarIcon: ({ size, color }) => (
             <Car size={size} color={color} />
           ),
-          href: !isSignedUp ? null : undefined,
+          href: !isDriver ? undefined : null,
         }}
       />
+      }
+      if (isDriver || !Driver) {
+      <Tabs.Screen
+        name="driver"
+        options={{
+          title: 'Driver',
+          tabBarIcon: ({ size, color }) => (
+            <Car size={size} color={color} />
+          ),
+          href: isDriver ? undefined : null,
+        }}
+      />
+      }
       <Tabs.Screen
         name="messages"
         options={{
@@ -110,7 +126,7 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => (
             <MessageCircle size={size} color={color} />
           ),
-          href: !isSignedUp ? null : undefined,
+          href: undefined,
         }}
       />
       <Tabs.Screen
@@ -120,11 +136,10 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => (
             <User size={size} color={color} />
           ),
-          href: !isSignedUp ? null : undefined,
+          href: undefined,
         }}
       />
     </Tabs>
     </SafeAreaProvider>
-    </ModeProvider>
   );
 }
