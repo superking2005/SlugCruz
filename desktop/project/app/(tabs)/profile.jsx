@@ -48,7 +48,7 @@ export default function ProfileScreen() {
           <Button title="Messages" onPress={() => router.push('/messages')}/>
         </View>
         <View style={styles.navButtonContainer}>
-          <Button title="Rides" onPress={() => router.push('/rides')}/>
+          <Button title="Rides" onPress={() => router.push('/rider')}/>
         </View>
         <View style={styles.navButtonContainer}>
           <Button title="Profile" onPress={() => router.push('/profile')}/>
