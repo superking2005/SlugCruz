@@ -17,14 +17,44 @@ export default function RidesScreen() {
   const [rides, setRides] = useState([]);
 
   // Post a new ride (Driver)
-  const postRide = async () => {
+  const postRide = async () => {'
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData?.user?.id) {
+      console.error('User fetch error:', userError);
+      alert('You must be logged in to post a ride.');
+      return;
+    }
+
+    const userID = userData.user.id;
+    if (!userID) {
+      alert('User not logged in');
+    return;
+    }
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userID)
+      .single();
+
+    if (profileError && !profileData) {
+      // Profile not found, create one
+      const { error: createProfileError } = await supabase.from('profiles').insert([{ id: userID }]);
+      if (createProfileError) {
+        console.error('Error creating profile:', createProfileError);
+        alert('Failed to create user profile');
+        return;
+      }
+    }
     const { data, error } = await supabase.from('rides').insert([
       {
-        driver_id: 'driver_123', // static ID for now
+        posted_by: 'rider',
+        driver_id: userID,
         from_location: from,
         to_location: to,
-        date,
-        time,
+        date: date,
+        time: time,
+        available_seats: Number(seats),
         phone: phone,
       },
     ]);
@@ -59,9 +89,9 @@ export default function RidesScreen() {
     }
   };
 
-  // Fetch available rides (Rider)
+  // Fetch available rides (from the Drivers)
   const fetchRides = async () => {
-    const { data, error } = await supabase.from('rides').select('*');
+    const { data, error } = await supabase.from('rides').select('*').eq('posted_by', 'driver');
     if (error) {
       console.error(error);
     } else {
@@ -83,6 +113,13 @@ export default function RidesScreen() {
         <TextInput style={styles.input} placeholder="To" value={to} onChangeText={setTo} />
         <TextInput style={styles.input} placeholder="Date (e.g., 2025-07-10)" value={date} onChangeText={setDate} />
         <TextInput style={styles.input} placeholder="Time (e.g., 14:30)" value={time} onChangeText={setTime} />
+        <TextInput
+          style={styles.input}
+          placeholder="Number of Passengers"
+          value={seats}
+          onChangeText={setSeats}
+          keyboardType="numeric"
+           />
         <TextInput
           style={styles.input}
           placeholder="Phone Number"
