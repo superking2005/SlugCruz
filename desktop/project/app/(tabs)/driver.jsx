@@ -1,99 +1,40 @@
 import { useState, useEffect } from 'react';
-import { View, Text, Button, FlatList, TextInput, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Button, FlatList, TextInput, StyleSheet, ScrollView, Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { router } from 'expo-router';
 
-
-export default function RidesScreen() {
-  // States for driver ride input
+export default function DriverRidesScreen() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [seats, setSeats] = useState('');
   const [phone, setPhone] = useState('');
-
-  // State for all rides
   const [rides, setRides] = useState([]);
+  const [userID, setUserID] = useState(null);
 
-  // Post a new ride (Driver)
-  const postRide = async () => {
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !userData?.user?.id) {
-      console.error('User fetch error:', userError);
-      alert('You must be logged in to post a ride.');
-      return;
-    }
-
-    const userID = userData.user.id;
-    if (!userID) {
-      alert('User not logged in');
-    return;
-    }
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', userID)
-      .single();
-
-    if (profileError && !profileData) {
-      // Profile not found, create one
-      const { error: createProfileError } = await supabase.from('profiles').insert([{ id: userID }]);
-      if (createProfileError) {
-        console.error('Error creating profile:', createProfileError);
-        alert('Failed to create user profile');
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        Alert.alert('Error', 'You must be logged in');
         return;
       }
-    }
-    const { data, error } = await supabase.from('rides').insert([
-      {
-        posted_by: 'driver',
-        driver_id: userID,
-        from_location: from,
-        to_location: to,
-        date: date,
-        time: time,
-        available_seats: Number(seats),
-        phone: phone,
-      },
-    ]);
-    if (error) {
-      console.error(error);
-      alert('Error posting ride.');
-    } else {
-      alert('Ride posted!');
-      fetchRides(); // refresh list
-      setFrom('');
-      setTo('');
-      setDate('');
-      setTime('');
-      setSeats('');
-      setPhone('');
-    }
-  };
+      setUserID(data.user.id);
+    };
+    fetchUser();
+  }, []);
 
-  // Book a ride (Rider)
-  const bookRide = async (rideId) => {
-    const { data, error } = await supabase.from('ride_signups').insert([
-      {
-        ride_id: rideId,
-        rider_id: 'rider_456', // static ID for now
-      },
-    ]);
-    if (error) {
-      console.error(error);
-      alert('Error booking ride.');
-    } else {
-      alert('Ride booked!');
-    }
-  };
-
-  // Fetch available rides (Rider)
+  // Fetch rides posted by this driver, plus any bookings
   const fetchRides = async () => {
-    const { data, error } = await supabase.from('rides').select('*').eq('posted_by', 'rider');
+    if (!userID) return;
+    const { data, error } = await supabase
+      .from('rides')
+      .select('*, ride_signups (id, rider_id, booked)')
+      .eq('driver_id', userID);
     if (error) {
       console.error(error);
+      Alert.alert('Error fetching rides');
     } else {
       setRides(data);
     }
@@ -101,10 +42,75 @@ export default function RidesScreen() {
 
   useEffect(() => {
     fetchRides();
-  }, []);
+  }, [userID]);
+
+  // Post a new ride (driver)
+  const postRide = async () => {
+    if (!userID) {
+      Alert.alert('Error', 'You must be logged in to post a ride.');
+      return;
+    }
+
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userID)
+      .single();
+
+    if (profileError && !profileData) {
+      const { error: createProfileError } = await supabase.from('profiles').insert([{ id: userID }]);
+      if (createProfileError) {
+        console.error('Error creating profile:', createProfileError);
+        Alert.alert('Failed to create user profile');
+        return;
+      }
+    }
+
+    const { error } = await supabase.from('rides').insert([
+      {
+        posted_by: 'driver',
+        driver_id: userID,
+        from_location: from,
+        to_location: to,
+        date,
+        time,
+        available_seats: Number(seats),
+        phone,
+      },
+    ]);
+
+    if (error) {
+      console.error(error);
+      Alert.alert('Error posting ride');
+    } else {
+      Alert.alert('Ride posted!');
+      setFrom('');
+      setTo('');
+      setDate('');
+      setTime('');
+      setSeats('');
+      setPhone('');
+      fetchRides();
+    }
+  };
+
+  // Accept or Reject booking
+  const updateBookingStatus = async (signupId, newStatus) => {
+    const { error } = await supabase
+      .from('ride_signups')
+      .update({ booked: newStatus })
+      .eq('id', signupId);
+
+    if (error) {
+      console.error(error);
+      Alert.alert('Error updating booking status');
+    } else {
+      Alert.alert(`Booking ${newStatus}`);
+      fetchRides();
+    }
+  };
 
   return (
-    // ✅ Wrap everything in a View with flex: 1 to contain both the content and the nav bar
     <View style={styles.fullScreenContainer}>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.header}>Post a Ride (Driver)</Text>
@@ -130,57 +136,50 @@ export default function RidesScreen() {
 
         <Button title="Post Ride" onPress={postRide} />
 
-        <Text style={styles.header}>Available Rides</Text>
+        <Text style={styles.header}>Your Rides & Booking Requests</Text>
 
         <FlatList
-          // Using scrollEnabled={false} can help if you experience nested scroll issues,
-          // but it's often not necessary with this layout.
           scrollEnabled={false}
           data={rides}
-          keyExtractor={(item) => item.id?.toString()}
+          keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.rideCard}>
               <Text>{item.from_location} → {item.to_location}</Text>
               <Text>{item.date} at {item.time}</Text>
               <Text>Seats: {item.available_seats}</Text>
               <Text>Phone: {item.phone || 'N/A'}</Text>
-              <Button title="Book Ride" onPress={() => bookRide(item.id)} />
+
+              {/* Show booking requests */}
+              {item.ride_signups && item.ride_signups.length > 0 ? (
+                item.ride_signups.map((signup) => (
+                  <View key={signup.id} style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 10 }}>
+                    <Text>Rider ID: {signup.rider_id}</Text>
+                    <Text>Status: {signup.booked}</Text>
+                    {signup.booked === 'pending' && (
+                      <View style={{ flexDirection: 'row', marginTop: 5 }}>
+                        <Button title="Accept" onPress={() => updateBookingStatus(signup.id, 'accepted')} />
+                        <View style={{ width: 10 }} />
+                        <Button title="Reject" onPress={() => updateBookingStatus(signup.id, 'rejected')} />
+                      </View>
+                    )}
+                  </View>
+                ))
+              ) : (
+                <Text style={{ marginTop: 10 }}>No booking requests yet</Text>
+              )}
             </View>
           )}
         />
       </ScrollView>
-
-      {/* ✅ New Navigation Bar at the bottom */}
-      <View style={styles.navBar}>
-        <View style={styles.navButtonContainer}>
-          <Button title="Home" onPress={() => router.push('/home')}/>
-        </View>
-        <View style={styles.navButtonContainer}>
-          <Button title="Messages" onPress={() => router.push('/messages')}/>
-        </View>
-        <View style={styles.navButtonContainer}>
-          <Button title="Profile" onPress={() => router.push('/profile')}/>
-        </View>
-      </View>
+      {/* Your existing nav bar if any */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // ✅ New style to ensure the main view takes up the whole screen
-  fullScreenContainer: {
-    flex: 1,
-  },
-  container: {
-    padding: 20,
-    // ✅ Add padding to the bottom to ensure last item is not hidden behind the nav bar
-    paddingBottom: 100,
-  },
-  header: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginVertical: 15,
-  },
+  fullScreenContainer: { flex: 1 },
+  container: { padding: 20, paddingBottom: 100 },
+  header: { fontSize: 20, fontWeight: '600', marginVertical: 15 },
   input: {
     borderWidth: 1,
     padding: 10,
@@ -193,25 +192,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 10,
-  },
-  // ✅ Styles for the new navigation bar
-  navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#ccc',
-    backgroundColor: '#f8f8f8',
-    // These position it at the bottom of the parent View
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  // ✅ Wrapper for each button to help with layout
-  navButtonContainer: {
-    flex: 1,
-    marginHorizontal: 4,
   },
 });
