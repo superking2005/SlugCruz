@@ -96,18 +96,66 @@ export default function DriverRidesScreen() {
 
   // Accept or Reject booking
   const updateBookingStatus = async (signupId, newStatus) => {
-    const { error } = await supabase
+    const { data: signupData, error: fetchError } = await supabase
+    .from('ride_signups')
+    .select('ride_id, rider_id')
+    .eq('id', signupId)
+    .single();
+    if (fetchError) {
+      console.error(fetchError);
+      Alert.alert('Error fetching rider info');
+      return;
+    }
+    const { ride_id, rider_id } = signupData;
+    const { error: updateError } = await supabase
       .from('ride_signups')
       .update({ booked: newStatus })
       .eq('id', signupId);
-
-    if (error) {
-      console.error(error);
+    if (updateError) {
+      console.error(updateError);
       Alert.alert('Error updating booking status');
-    } else {
-      Alert.alert(`Booking ${newStatus}`);
-      fetchRides();
+      return;
     }
+    // Fetch ride info to include in message
+    const { data: rideData, error: rideError } = await supabase
+      .from('rides')
+      .select('from_location, to_location, date, time')
+      .eq('id', ride_id)
+      .single();
+    if (rideError) {
+      console.error(rideError);
+      Alert.alert('Error fetching ride info');
+      return;
+    }
+    // Compose message
+    const rideInfo = `${rideData.from_location} → ${rideData.to_location} on ${rideData.date} at ${rideData.time}`;
+    const messageBody = `Your ride request was ${newStatus}. Ride details: ${rideInfo}`;
+    console.log("Inserting message:", {
+      sender_id: userID,
+      recipient_id: rider_id,
+      body: messageBody,
+      sent_at: new Date().toISOString(),
+    });
+    const { error: messageError } = await supabase.from('messages').insert([
+      {
+        sender_id: userID, // the driver
+        recipient_id: rider_id,
+        body: messageBody,
+        sent_at: new Date().toISOString(),
+      },
+    ]);
+    if (messageError) {
+      console.error("Message insert error:", messageError);
+      Alert.alert('Error sending message to rider');
+    } else {
+      console.log("✅ Message sent successfully!");
+    }
+    if (messageError) {
+      console.error(messageError);
+      Alert.alert('Error sending message to rider');
+    }
+    Alert.alert(`Booking ${newStatus}`);
+    fetchRides();
   };
 
   return (
