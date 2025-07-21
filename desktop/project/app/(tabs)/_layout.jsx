@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { UserPlus, Chrome as Home, Car, MessageCircle, User } from 'lucide-react-native';
+import { Home, Car, Armchair, MessageCircle, User } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
@@ -44,47 +44,6 @@ export default function TabLayout() {
         },
       }}>
       <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Sign Up',
-          tabBarIcon: ({ size, color }) => (
-            <UserPlus size={size} color={color} />
-          ),
-          // undefined shows the tab, null hides it
-          href: !isSignedUp ? undefined : null,
-        }}
-      />
-      <Tabs.Screen
-        name="signin"
-        options={{
-          title: 'Login',
-          tabBarIcon: ({ size, color }) => (
-            <Home size={size} color={color} />
-          ),
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="terms"
-        options={{
-          title: 'Terms and Conditions',
-          tabBarIcon: ({ size, color }) => (
-            <Home size={size} color={color} />
-          ),
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="policy"
-        options={{
-          title: 'Privacy Policy',
-          tabBarIcon: ({ size, color }) => (
-            <Home size={size} color={color} />
-          ),
-          href: null,
-        }}
-      />
-      <Tabs.Screen
         name="home"
         options={{
           title: 'Home',
@@ -94,20 +53,16 @@ export default function TabLayout() {
           href: undefined,
         }}
       />
-      {/* conditionally preloading isDriver */}
-      if (isDriver || !Driver) {
       <Tabs.Screen
         name="rider"
         options={{
           title: 'Rider',
           tabBarIcon: ({ size, color }) => (
-            <Car size={size} color={color} />
+            <Armchair size={size} color={color} />
           ),
           href: !isDriver ? undefined : null,
         }}
       />
-      }
-      if (isDriver || !Driver) {
       <Tabs.Screen
         name="driver"
         options={{
@@ -118,7 +73,6 @@ export default function TabLayout() {
           href: isDriver ? undefined : null,
         }}
       />
-      }
       <Tabs.Screen
         name="messages"
         options={{

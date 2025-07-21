@@ -31,8 +31,8 @@ export default function ProfileScreen() {
             circleInActiveColor="#f3f4f6"
             circleSize={26}
             barHeight={28}
-            switchWidthMultiplier={2.2}
-            switchBorderRadius={20}
+            switchWidthMultiplier={2.1}
+            switchBorderRadius={18}
             renderActiveText={false}
             renderInActiveText={false}
           />

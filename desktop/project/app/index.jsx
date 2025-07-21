@@ -130,7 +130,7 @@ export default function SignupScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <Image source={require('../../assets/images/favicon.png')} style={styles.logoImage} />
+              <Image source={require('../assets/images/favicon.png')} style={styles.logoImage} />
               <Text style={styles.logoText}>UCSC Carpooling</Text>
             </View>
             <Text style={styles.subtitle}>

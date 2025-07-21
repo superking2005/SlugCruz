@@ -14,6 +14,10 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="+not-found" />
+        <Stack.Screen name="index" />
+        <Stack.Screen name="policy" />
+        <Stack.Screen name="signin" />
+        <Stack.Screen name="terms" />
       </Stack>
       <StatusBar style="auto" />
       </SafeAreaProvider>
