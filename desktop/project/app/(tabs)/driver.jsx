@@ -30,7 +30,7 @@ export default function DriverRidesScreen() {
     if (!userID) return;
     const { data, error } = await supabase
       .from('rides')
-      .select('*, ride_signups (id, rider_id, booked)')
+      .select('*, ride_signups (id, rider_id, booked, full_name)')
       .eq('driver_id', userID);
     if (error) {
       console.error(error);
@@ -201,7 +201,7 @@ export default function DriverRidesScreen() {
               {item.ride_signups && item.ride_signups.length > 0 ? (
                 item.ride_signups.map((signup) => (
                   <View key={signup.id} style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 10 }}>
-                    <Text>Rider ID: {signup.rider_id}</Text>
+                    <Text>Rider Name: {signup.full_name}</Text>
                     <Text>Status: {signup.booked}</Text>
                     {signup.booked === 'pending' && (
                       <View style={{ flexDirection: 'row', marginTop: 5 }}>
