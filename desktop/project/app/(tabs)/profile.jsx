@@ -40,20 +40,6 @@ export default function ProfileScreen() {
         {/* Driver Rider toggle -------------------------------------------------*/}
       </View>
     </SafeAreaView>
-      <View style={styles.navBar}>
-        <View style={styles.navButtonContainer}>
-          <Button title="Home" onPress={() => router.push('/home')}/>
-        </View>
-        <View style={styles.navButtonContainer}>
-          <Button title="Messages" onPress={() => router.push('/messages')}/>
-        </View>
-        <View style={styles.navButtonContainer}>
-          <Button title="Rides" onPress={() => router.push('/rider')}/>
-        </View>
-        <View style={styles.navButtonContainer}>
-          <Button title="Profile" onPress={() => router.push('/profile')}/>
-        </View>
-      </View>
   
 
 </View>
