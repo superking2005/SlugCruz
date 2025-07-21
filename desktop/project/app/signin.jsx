@@ -1,4 +1,3 @@
-import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
   View,
@@ -13,13 +12,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mail, Lock, LogIn } from 'lucide-react-native';
 import { createClient } from '@supabase/supabase-js';
+import { router } from 'expo-router';
 
 const SUPABASE_URL = 'https://hlwgpwqdviwtwqnuhyee.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhsd2dwd3Fkdml3dHdxbnVoeWVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2ODQ5NjIsImV4cCI6MjA2NzI2MDk2Mn0.IefZhUj-LFK7znoAGALJdAKB2FJpOPg-0ZyODYoiXHk'; // Your public anon key
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function LoginScreen() {
-  const navigation = useNavigation();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -60,8 +59,8 @@ export default function LoginScreen() {
       }
 
       Alert.alert('Success!', 'You are now logged in.');
-      // Navigate to the driver screen after successful login
-      navigation.navigate('driver');
+      // Navigate to the profile screen after successful login
+      router.replace('/(tabs)/profile');
     } catch (err) {
       Alert.alert('Login Error', err.message || 'Something went wrong');
     } finally {
@@ -118,7 +117,7 @@ export default function LoginScreen() {
         {/* Back to Sign Up */}
         <Text style={styles.footerText}>
           Don't have an account?{' '}
-          <TouchableOpacity onPress={() => navigation.navigate('index')}>
+          <TouchableOpacity onPress={() => router.replace('/')}>
             <Text style={styles.linkText}>Sign Up</Text>
           </TouchableOpacity>
         </Text>
