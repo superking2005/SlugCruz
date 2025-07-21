@@ -85,7 +85,7 @@ export default function ProfileScreen() {
           full_name: full_name.trim(),
           major: major.trim(),
           college: college.trim(),
-          updated_at: new Date().toISOString(),
+          //updated_at: new Date().toISOString(),
         });
 
       if (error) {
