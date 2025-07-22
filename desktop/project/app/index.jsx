@@ -199,6 +199,7 @@ export default function SignupScreen() {
                   secureTextEntry={!showConfirmPassword}
                   autoCapitalize="none"
                 />
+                
                 <TouchableOpacity
                   style={styles.eyeIcon}
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}>

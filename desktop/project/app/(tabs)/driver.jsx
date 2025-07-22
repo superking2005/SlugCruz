@@ -25,13 +25,26 @@ export default function DriverRidesScreen() {
     fetchUser();
   }, []);
 
-  // Fetch rides posted by this driver, plus any bookings
+  // Fetch rides posted by this driver, plus any bookings with rider profile info
   const fetchRides = async () => {
     if (!userID) return;
     const { data, error } = await supabase
       .from('rides')
-      .select('*, ride_signups (id, rider_id, booked)')
+      .select(`
+        *,
+        ride_signups (
+          id, 
+          rider_id, 
+          booked,
+          profiles!rider_id (
+            full_name,
+            major,
+            college
+          )
+        )
+      `)
       .eq('driver_id', userID);
+    
     if (error) {
       console.error(error);
       Alert.alert('Error fetching rides');
@@ -97,45 +110,53 @@ export default function DriverRidesScreen() {
   // Accept or Reject booking
   const updateBookingStatus = async (signupId, newStatus) => {
     const { data: signupData, error: fetchError } = await supabase
-    .from('ride_signups')
-    .select('ride_id, rider_id')
-    .eq('id', signupId)
-    .single();
+      .from('ride_signups')
+      .select('ride_id, rider_id')
+      .eq('id', signupId)
+      .single();
+    
     if (fetchError) {
       console.error(fetchError);
       Alert.alert('Error fetching rider info');
       return;
     }
+    
     const { ride_id, rider_id } = signupData;
     const { error: updateError } = await supabase
       .from('ride_signups')
       .update({ booked: newStatus })
       .eq('id', signupId);
+    
     if (updateError) {
       console.error(updateError);
       Alert.alert('Error updating booking status');
       return;
     }
+    
     // Fetch ride info to include in message
     const { data: rideData, error: rideError } = await supabase
       .from('rides')
       .select('from_location, to_location, date, time')
       .eq('id', ride_id)
       .single();
+    
     if (rideError) {
       console.error(rideError);
       Alert.alert('Error fetching ride info');
       return;
     }
+    
     // Compose message
     const rideInfo = `${rideData.from_location} → ${rideData.to_location} on ${rideData.date} at ${rideData.time}`;
     const messageBody = `Your ride request was ${newStatus}. Ride details: ${rideInfo}`;
+    
     console.log("Inserting message:", {
       sender_id: userID,
       recipient_id: rider_id,
       body: messageBody,
       sent_at: new Date().toISOString(),
     });
+    
     const { error: messageError } = await supabase.from('messages').insert([
       {
         sender_id: userID, // the driver
@@ -144,16 +165,14 @@ export default function DriverRidesScreen() {
         sent_at: new Date().toISOString(),
       },
     ]);
+    
     if (messageError) {
       console.error("Message insert error:", messageError);
       Alert.alert('Error sending message to rider');
     } else {
       console.log("✅ Message sent successfully!");
     }
-    if (messageError) {
-      console.error(messageError);
-      Alert.alert('Error sending message to rider');
-    }
+    
     Alert.alert(`Booking ${newStatus}`);
     fetchRides();
   };
@@ -192,7 +211,7 @@ export default function DriverRidesScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.rideCard}>
-              <Text>{item.from_location} → {item.to_location}</Text>
+              <Text style={styles.rideTitle}>{item.from_location} → {item.to_location}</Text>
               <Text>{item.date} at {item.time}</Text>
               <Text>Seats: {item.available_seats}</Text>
               <Text>Phone: {item.phone || 'N/A'}</Text>
@@ -200,11 +219,25 @@ export default function DriverRidesScreen() {
               {/* Show booking requests */}
               {item.ride_signups && item.ride_signups.length > 0 ? (
                 item.ride_signups.map((signup) => (
-                  <View key={signup.id} style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 10 }}>
-                    <Text>Rider ID: {signup.rider_id}</Text>
-                    <Text>Status: {signup.booked}</Text>
+                  <View key={signup.id} style={styles.signupCard}>
+                    <Text style={styles.riderName}>
+                      Rider: {signup.profiles?.full_name || 'Name not available'}
+                    </Text>
+                    {signup.profiles?.major && (
+                      <Text>Major: {signup.profiles.major}</Text>
+                    )}
+                    {signup.profiles?.college && (
+                      <Text>College: {signup.profiles.college}</Text>
+                    )}
+                    <Text style={[
+                      styles.status,
+                      { color: signup.booked === 'accepted' ? 'green' : 
+                               signup.booked === 'rejected' ? 'red' : 'orange' }
+                    ]}>
+                      Status: {signup.booked}
+                    </Text>
                     {signup.booked === 'pending' && (
-                      <View style={{ flexDirection: 'row', marginTop: 5 }}>
+                      <View style={styles.buttonRow}>
                         <Button title="Accept" onPress={() => updateBookingStatus(signup.id, 'accepted')} />
                         <View style={{ width: 10 }} />
                         <Button title="Reject" onPress={() => updateBookingStatus(signup.id, 'rejected')} />
@@ -213,32 +246,84 @@ export default function DriverRidesScreen() {
                   </View>
                 ))
               ) : (
-                <Text style={{ marginTop: 10 }}>No booking requests yet</Text>
+                <Text style={styles.noRequests}>No booking requests yet</Text>
               )}
             </View>
           )}
         />
       </ScrollView>
-      {/* Your existing nav bar if any */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  fullScreenContainer: { flex: 1 },
-  container: { padding: 20, paddingBottom: 100 },
-  header: { fontSize: 20, fontWeight: '600', marginVertical: 15 },
+  fullScreenContainer: { 
+    flex: 1,
+    backgroundColor: '#f5f5f5'
+  },
+  container: { 
+    padding: 20, 
+    paddingBottom: 100 
+  },
+  header: { 
+    fontSize: 20, 
+    fontWeight: '600', 
+    marginVertical: 15,
+    color: '#333'
+  },
   input: {
     borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
     padding: 10,
     marginVertical: 5,
-    borderRadius: 5,
+    borderRadius: 8,
+    fontSize: 16
   },
   rideCard: {
     marginVertical: 10,
     padding: 15,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#ddd',
     borderRadius: 10,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2
   },
+  rideTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5
+  },
+  signupCard: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: '#f9f9f9',
+    padding: 10,
+    borderRadius: 5
+  },
+  riderName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333'
+  },
+  status: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 5
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    marginTop: 10
+  },
+  noRequests: {
+    marginTop: 10,
+    fontStyle: 'italic',
+    color: '#666'
+  }
 });
