@@ -138,6 +138,8 @@ export default function ProfileScreen() {
               switchBorderRadius={18}
               renderActiveText={false}
               renderInActiveText={false}
+              testID="mode-toggle-switch"  //need this for unit tests with playwright
+
             />
           </View>
         </View>
