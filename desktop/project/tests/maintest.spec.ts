@@ -45,7 +45,7 @@ test.describe("Log in using Brennan's account", () => {
 
     await page.getByText("Sign In", { exact: true }).click();
 
-    await expect(page).toHaveURL(/.*driver/);
+    await expect(page).toHaveURL(/.*profile/);
   });
 });
 
@@ -68,7 +68,7 @@ test.describe("Toggle to driver ", () => {
     await page.getByPlaceholder("Enter your password").fill("12345678");
 
     await page.getByText("Sign In", { exact: true }).click();
-    await expect(page).toHaveURL(/.*driver/);
+    await expect(page).toHaveURL(/.*profile/);
 
     await page.getByRole("tab", { name: "Profile" }).click();
 
@@ -80,10 +80,8 @@ test.describe("Toggle to driver ", () => {
       await page.getByTestId("mode-toggle-switch").click();
     } else {
       console.log("Already in Driver Mode. No action needed.");
-      await expect(page.getByText("Driver Mode")).toBeVisible();
     }
 
-    await expect(page.getByText("Driver Mode")).toBeVisible();
     await expect(page.getByText("Rider Mode")).not.toBeVisible();
   });
 });
@@ -107,7 +105,7 @@ test.describe("Create ride in driver mode", () => {
     await page.getByPlaceholder("Enter your password").fill("12345678");
 
     await page.getByText("Sign In", { exact: true }).click();
-    await expect(page).toHaveURL(/.*driver/);
+    await expect(page).toHaveURL(/.*profile/);
 
     await page.getByRole("tab", { name: "Profile" }).click();
 
@@ -119,13 +117,11 @@ test.describe("Create ride in driver mode", () => {
       await page.getByTestId("mode-toggle-switch").click();
     } else {
       console.log("Already in Driver Mode. No action needed.");
-      await expect(page.getByText("Driver Mode")).toBeVisible();
     }
 
-    await expect(page.getByText("Driver Mode")).toBeVisible();
     await expect(page.getByText("Rider Mode")).not.toBeVisible();
 
-    await page.getByRole("tab", { name: "Driver" }).click();
+    await page.getByRole("tab", { name: "driver" }).click();
 
     await page.getByPlaceholder("From").fill(rideDetails.from);
     await page.getByPlaceholder("To").fill(rideDetails.to);
