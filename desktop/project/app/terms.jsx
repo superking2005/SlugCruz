@@ -1,9 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Button } from 'react-native';
+import { useRouter } from 'expo-router';
 
 export default function TermsScreen() {
+  const router = useRouter();
+
   return (
     <View style={styles.container}>
+      <Button title="Back" onPress={() => router.push('/')} />
       <Text style={styles.title}>Terms of Service</Text>
       <Text style={styles.text}>This is a placeholder for Terms of Service.</Text>
     </View>
