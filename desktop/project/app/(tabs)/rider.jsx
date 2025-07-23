@@ -12,9 +12,9 @@ export default function RidesScreen() {
 
   const [rides, setRides] = useState([]);
   const [filteredRides, setFilteredRides] = useState([]);
+  const [filtersApplied, setFiltersApplied] = useState(false);
   const [userID, setUserID] = useState(null);
 
-  // Filters
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
   const [filterDate, setFilterDate] = useState('');
@@ -50,6 +50,8 @@ export default function RidesScreen() {
   }, []);
 
   const applyFilters = async () => {
+    setFiltersApplied(true);
+
     const today = new Date().toISOString().split('T')[0];
     const fromValue = filterFrom.trim();
     const toValue = filterTo.trim();
@@ -65,11 +67,10 @@ export default function RidesScreen() {
     if (dateValue) {
       query = query.eq('date', dateValue);
     } else {
-      query = query.gte('date', today); // future only
+      query = query.gte('date', today);
     }
 
     const { data, error } = await query;
-
     if (error) {
       console.error(error);
       Alert.alert('Error applying filters');
@@ -83,6 +84,7 @@ export default function RidesScreen() {
     setFilterTo('');
     setFilterDate('');
     setFilteredRides([]);
+    setFiltersApplied(false);
   };
 
   const bookRide = async (rideId) => {
@@ -178,32 +180,28 @@ export default function RidesScreen() {
           <Button title="Clear Filters" onPress={clearFilters} color="#888" />
         </View>
 
-        {filteredRides.length > 0 && (
-          <>
-            <Text style={styles.header}>Available Rides</Text>
-            <FlatList
-              scrollEnabled={false}
-              data={filteredRides}
-              keyExtractor={(item) => item.id?.toString()}
-              renderItem={({ item }) => {
-                const status = getBookingStatus(item);
-                return (
-                  <View style={styles.rideCard}>
-                    <Text>{item.from_location} → {item.to_location}</Text>
-                    <Text>{item.date} at {item.time}</Text>
-                    <Text>Seats: {item.available_seats}</Text>
-                    <Text>Phone: {item.phone || 'N/A'}</Text>
-                    {status ? (
-                      <Text>Status: {status.charAt(0).toUpperCase() + status.slice(1)}</Text>
-                    ) : (
-                      <Button title="Book Ride" onPress={() => bookRide(item.id)} />
-                    )}
-                  </View>
-                );
-              }}
-            />
-          </>
-        )}
+        <Text style={styles.header}>Available Rides</Text>
+        <FlatList
+          scrollEnabled={false}
+          data={filtersApplied ? filteredRides : rides}
+          keyExtractor={(item) => item.id?.toString()}
+          renderItem={({ item }) => {
+            const status = getBookingStatus(item);
+            return (
+              <View style={styles.rideCard}>
+                <Text>{item.from_location} → {item.to_location}</Text>
+                <Text>{item.date} at {item.time}</Text>
+                <Text>Seats: {item.available_seats}</Text>
+                <Text>Phone: {item.phone || 'N/A'}</Text>
+                {status ? (
+                  <Text>Status: {status.charAt(0).toUpperCase() + status.slice(1)}</Text>
+                ) : (
+                  <Button title="Book Ride" onPress={() => bookRide(item.id)} />
+                )}
+              </View>
+            );
+          }}
+        />
       </ScrollView>
     </View>
   );
