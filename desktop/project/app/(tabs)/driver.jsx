@@ -1,3 +1,5 @@
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 import { useState, useEffect } from 'react';
 import { View, Text, Button, FlatList, TextInput, StyleSheet, ScrollView, Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
@@ -77,10 +79,14 @@ export default function DriverRidesScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchRides();
-    fetchRiderScheduledRides();
-  }, [userID]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!userID) return;
+
+      fetchRides();
+      fetchRiderScheduledRides();
+    }, [userID])
+  );
 
   const postRide = async () => {
     if (!userID) {

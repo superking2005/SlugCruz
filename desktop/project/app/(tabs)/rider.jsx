@@ -1,3 +1,5 @@
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 import { useState, useEffect } from 'react';
 import { View, Text, Button, FlatList, TextInput, StyleSheet, ScrollView, Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
@@ -74,31 +76,74 @@ export default function RidesScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchDriverRides();
-    fetchMyScheduledRides();
-  }, [userID]);
+  useFocusEffect(
+    useCallback(() => {
+      if (userID) {
+        fetchDriverRides();
+        fetchMyScheduledRides();
+      }
+    }, [userID])
+  );
 
   // Book a driver's ride
   const bookDriverRide = async (rideId) => {
-    if (!userID) {
-      Alert.alert('Error', 'User not logged in');
-      return;
-    }
-    const { error } = await supabase.from('ride_signups').insert([
-      {
-        ride_id: rideId,
-        rider_id: userID,
-      },
-    ]);
-    if (error) {
-      console.error(error);
-      Alert.alert('Error booking ride', error.message);
-    } else {
-      Alert.alert('Ride booked! Waiting for driver approval.');
-      fetchDriverRides();
-    }
-  };
+    if (!userID) {
+        Alert.alert('Error', 'User not logged in');
+        return;
+    }
+
+    // Insert booking request
+    const { data: signupData, error: signupError } = await supabase
+        .from('ride_signups')
+        .insert([
+        {
+            ride_id: rideId,
+            rider_id: userID,
+        },
+        ])
+        .select()
+        .single(); // get inserted row
+
+    if (signupError) {
+        console.error('Error booking ride:', signupError);
+        Alert.alert('Error booking ride', signupError.message);
+        return;
+    }
+
+    // Fetch ride info to get driver's ID and ride details
+    const { data: rideData, error: rideError } = await supabase
+        .from('rides')
+        .select('driver_id, from_location, to_location, date, time')
+        .eq('id', rideId)
+        .single();
+
+    if (rideError || !rideData) {
+        console.error('Error fetching ride info:', rideError);
+        Alert.alert('Booking succeeded, but failed to notify driver.');
+        fetchDriverRides();
+        return;
+    }
+
+    // Send message to driver
+    const { error: messageError } = await supabase.from('messages').insert([
+        {
+        sender_id: userID,
+        recipient_id: rideData.driver_id,
+        body: `Your ride was booked. Ride: ${rideData.from_location} → ${rideData.to_location} on ${rideData.date} at ${rideData.time}`,
+        sent_at: new Date().toISOString(),
+        },
+    ]);
+
+    if (messageError) {
+        console.error('Error sending message:', messageError);
+        Alert.alert('Booking succeeded, but message failed to send.');
+    } else {
+        Alert.alert('Ride booked! Waiting for driver approval.');
+    }
+
+    fetchDriverRides(); // Refresh available rides
+    };
+
 
   // Helper: Get booking status of current user for driver's ride
   const getBookingStatus = (ride) => {
