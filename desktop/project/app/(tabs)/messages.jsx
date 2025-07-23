@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 import { View, Text, Button, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
@@ -9,7 +11,8 @@ export default function MessagesScreen() {
   const [messages, setMessages] = useState([]);
   const [userID, setUserID] = useState(null);
 
-  useEffect(() => {
+  useFocusEffect(
+  useCallback(() => {
     const fetchUserAndMessages = async () => {
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData.user) {
@@ -33,7 +36,8 @@ export default function MessagesScreen() {
     };
 
     fetchUserAndMessages();
-  }, []);
+    }, [])
+  );
 
   return (
     <View style={styles.fullScreenContainer}>
