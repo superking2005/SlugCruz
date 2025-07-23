@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { View, Text, Button, FlatList, TextInput, StyleSheet, ScrollView, Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
-import { router } from 'expo-router';
 
 export default function RidesScreen() {
-  // Your existing states for ride posting
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [date, setDate] = useState('');
@@ -12,11 +10,15 @@ export default function RidesScreen() {
   const [seats, setSeats] = useState('');
   const [phone, setPhone] = useState('');
 
-  // State for available rides
   const [rides, setRides] = useState([]);
+  const [filteredRides, setFilteredRides] = useState([]);
+  const [filtersApplied, setFiltersApplied] = useState(false);
   const [userID, setUserID] = useState(null);
 
-  // Fetch user ID once on mount
+  const [filterFrom, setFilterFrom] = useState('');
+  const [filterTo, setFilterTo] = useState('');
+  const [filterDate, setFilterDate] = useState('');
+
   useEffect(() => {
     const fetchUser = async () => {
       const { data, error } = await supabase.auth.getUser();
@@ -29,12 +31,12 @@ export default function RidesScreen() {
     fetchUser();
   }, []);
 
-  // Fetch available rides posted by drivers
   const fetchRides = async () => {
     const { data, error } = await supabase
       .from('rides')
       .select('*, ride_signups (rider_id, booked)')
       .eq('posted_by', 'driver');
+
     if (error) {
       console.error(error);
       Alert.alert('Error fetching rides');
@@ -47,7 +49,44 @@ export default function RidesScreen() {
     fetchRides();
   }, []);
 
-  // Book a ride (your added code)
+  const applyFilters = async () => {
+    setFiltersApplied(true);
+
+    const today = new Date().toISOString().split('T')[0];
+    const fromValue = filterFrom.trim();
+    const toValue = filterTo.trim();
+    const dateValue = filterDate.trim();
+
+    let query = supabase
+      .from('rides')
+      .select('*, ride_signups (rider_id, booked)')
+      .eq('posted_by', 'driver');
+
+    if (fromValue) query = query.ilike('from_location', `%${fromValue}%`);
+    if (toValue) query = query.ilike('to_location', `%${toValue}%`);
+    if (dateValue) {
+      query = query.eq('date', dateValue);
+    } else {
+      query = query.gte('date', today);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error(error);
+      Alert.alert('Error applying filters');
+    } else {
+      setFilteredRides(data);
+    }
+  };
+
+  const clearFilters = () => {
+    setFilterFrom('');
+    setFilterTo('');
+    setFilterDate('');
+    setFilteredRides([]);
+    setFiltersApplied(false);
+  };
+
   const bookRide = async (rideId) => {
     if (!userID) {
       Alert.alert('Error', 'User not logged in');
@@ -68,28 +107,22 @@ export default function RidesScreen() {
     }
   };
 
-  // Helper: Get booking status of current user for this ride
   const getBookingStatus = (ride) => {
     if (!ride.ride_signups) return null;
     const signup = ride.ride_signups.find((r) => r.rider_id === userID);
     return signup ? signup.booked : null;
   };
 
-  // Your existing postRide code remains unchanged
   const postRide = async () => {
     const { data: userData, error: userError } = await supabase.auth.getUser();
 
     if (userError || !userData?.user?.id) {
-      console.error('User fetch error:', userError);
       alert('You must be logged in to post a ride.');
       return;
     }
 
     const userID = userData.user.id;
-    if (!userID) {
-      alert('User not logged in');
-      return;
-    }
+
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('id')
@@ -97,73 +130,60 @@ export default function RidesScreen() {
       .single();
 
     if (profileError && !profileData) {
-      // Profile not found, create one
       const { error: createProfileError } = await supabase.from('profiles').insert([{ id: userID }]);
       if (createProfileError) {
-        console.error('Error creating profile:', createProfileError);
         alert('Failed to create user profile');
         return;
       }
     }
+
     const { data, error } = await supabase.from('rides').insert([
       {
         posted_by: 'rider',
         driver_id: userID,
         from_location: from,
         to_location: to,
-        date: date,
-        time: time,
+        date,
+        time,
         available_seats: Number(seats),
-        phone: phone,
+        phone,
       },
     ]);
+
     if (error) {
-      console.error(error);
       alert('Error posting ride.');
     } else {
       alert('Ride posted!');
-      fetchRides(); // refresh list
-      setFrom('');
-      setTo('');
-      setDate('');
-      setTime('');
-      setSeats('');
-      setPhone('');
+      fetchRides();
+      setFrom(''); setTo(''); setDate(''); setTime(''); setSeats(''); setPhone('');
     }
   };
 
   return (
     <View style={styles.fullScreenContainer}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.header}>Post a Ride (Rider)</Text>
-
-        {/* Your existing post ride form */}
+        <Text style={styles.header}>Schedule a Ride (Rider)</Text>
         <TextInput style={styles.input} placeholder="From" value={from} onChangeText={setFrom} />
         <TextInput style={styles.input} placeholder="To" value={to} onChangeText={setTo} />
-        <TextInput style={styles.input} placeholder="Date (e.g., 2025-07-10)" value={date} onChangeText={setDate} />
-        <TextInput style={styles.input} placeholder="Time (e.g., 14:30)" value={time} onChangeText={setTime} />
-        <TextInput
-          style={styles.input}
-          placeholder="Number of Passengers"
-          value={seats}
-          onChangeText={setSeats}
-          keyboardType="numeric"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Phone Number"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-        />
-
+        <TextInput style={styles.input} placeholder="Date" value={date} onChangeText={setDate} />
+        <TextInput style={styles.input} placeholder="Time" value={time} onChangeText={setTime} />
+        <TextInput style={styles.input} placeholder="Number of Passengers" value={seats} onChangeText={setSeats} keyboardType="numeric" />
+        <TextInput style={styles.input} placeholder="Phone Number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
         <Button title="Schedule Ride" onPress={postRide} />
 
-        <Text style={styles.header}>Available Rides</Text>
+        <Text style={styles.header}>Filter Available Rides</Text>
+        <TextInput style={styles.input} placeholder="From" value={filterFrom} onChangeText={setFilterFrom} />
+        <TextInput style={styles.input} placeholder="To" value={filterTo} onChangeText={setFilterTo} />
+        <TextInput style={styles.input} placeholder="Date (YYYY-MM-DD)" value={filterDate} onChangeText={setFilterDate} />
+        <View style={{ flexDirection: 'row', gap: 10, marginVertical: 10 }}>
+          <Button title="Apply Filters" onPress={applyFilters} />
+          <Button title="Clear Filters" onPress={clearFilters} color="#888" />
+        </View>
 
+        <Text style={styles.header}>Available Rides</Text>
         <FlatList
           scrollEnabled={false}
-          data={rides}
+          data={filtersApplied ? filteredRides : rides}
           keyExtractor={(item) => item.id?.toString()}
           renderItem={({ item }) => {
             const status = getBookingStatus(item);
@@ -173,8 +193,6 @@ export default function RidesScreen() {
                 <Text>{item.date} at {item.time}</Text>
                 <Text>Seats: {item.available_seats}</Text>
                 <Text>Phone: {item.phone || 'N/A'}</Text>
-
-                {/* Show booking status or booking button */}
                 {status ? (
                   <Text>Status: {status.charAt(0).toUpperCase() + status.slice(1)}</Text>
                 ) : (
@@ -185,7 +203,6 @@ export default function RidesScreen() {
           }}
         />
       </ScrollView>
-      {/* Your existing nav bar if any */}
     </View>
   );
 }
@@ -199,6 +216,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginVertical: 5,
     borderRadius: 5,
+    backgroundColor: '#fff',
   },
   rideCard: {
     marginVertical: 10,
@@ -206,5 +224,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 10,
+    backgroundColor: '#fefefe',
   },
 });
