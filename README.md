@@ -1,6 +1,5 @@
  Instructions
 * cd into desktop/project
-* 
 * run npm install
 * run command: npx expo start
 
