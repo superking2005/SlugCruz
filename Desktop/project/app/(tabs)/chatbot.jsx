@@ -16,12 +16,9 @@ import { useMode } from '../../context/ModeContext';
 import { supabase } from '../../lib/supabase';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// ✅ Import reviews.json
-import reviewsData from '../../assets/reviews.json';
-
 // Gemini API configuration
 const GEMINI_CONFIG = {
-  API_KEY: 'AIzaSyCCTaVAN7ZY30tasHeaTSyuQU8QGi3xr5Q',
+  API_KEY: 'AIzaSyCCTaVAN7ZY30tasHeaTSyuQU8QGi3xr5Q', // Replace this with your actual Gemini API key
   MODEL: 'gemini-1.5-flash',
 };
 
@@ -47,8 +44,6 @@ export default function ChatbotScreen() {
 📋 Details about rides you've posted
 ❓ General help with the app
 🔄 Switching between driver and rider modes
-
-You can also ask me for a story about a driver! (e.g. "story about Alice")
 
 What would you like to know?`,
     isUser: false,
@@ -77,8 +72,8 @@ What would you like to know?`,
       
       setUserProfile(profileData);
 
-      // Fetch user's rides (both as driver and rider)
-      const { data: ridesData } = await supabase
+      // Fetch rides where user is the driver
+      const { data: driverRides } = await supabase
         .from('rides')
         .select(`
           *,
@@ -98,21 +93,49 @@ What would you like to know?`,
             college
           )
         `)
-        .or(`driver_id.eq.${userId},ride_signups.rider_id.eq.${userId}`);
+        .eq('driver_id', userId);
 
-      setUserRides(ridesData || []);
+      // Fetch rides where user has signed up as a rider
+      const { data: riderSignups } = await supabase
+        .from('ride_signups')
+        .select(`
+          *,
+          rides (
+            *,
+            profiles!driver_id (
+              full_name,
+              major,
+              college
+            )
+          )
+        `)
+        .eq('rider_id', userId);
+
+      // Combine both sets of rides
+      const allUserRides = [
+        ...(driverRides || []),
+        ...(riderSignups?.map(signup => ({
+          ...signup.rides,
+          user_signup_status: signup.booked,
+          user_signup_id: signup.id
+        })) || [])
+      ];
+
+      console.log('Fetched user rides:', allUserRides.length);
+      console.log('Driver rides:', driverRides?.length || 0);
+      console.log('Rider signups:', riderSignups?.length || 0);
+
+      setUserRides(allUserRides);
     } catch (error) {
       console.error('Error fetching user data:', error);
     }
   };
 
-  // ✅ Unified chatbot response (handles both general + driver story)
   const generateChatbotResponse = async (userMessage) => {
     try {
-      const model = genAI.getGenerativeModel({ model: GEMINI_CONFIG.MODEL });
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-      const reviews = reviewsData
-      const reviewsText = Object.entries(reviews).map(([driver, texts]) => {return texts.map(t => `Driver ${driver}: "${t}"`).join('\n');}).join('\n');
+      // Create context about the user and their rides
       const userContext = `
 User Profile:
 - Name: ${userProfile?.full_name || 'Not set'}
@@ -120,7 +143,7 @@ User Profile:
 - College: ${userProfile?.college || 'Not set'}
 - Current Mode: ${isDriver ? 'Driver' : 'Rider'}
 
-User's Rides Data:
+User's Rides Data (${userRides.length} total rides):
 ${userRides.map(ride => `
 - Ride ID: ${ride.id}
 - From: ${ride.from_location} to ${ride.to_location}
@@ -128,11 +151,11 @@ ${userRides.map(ride => `
 - Posted by: ${ride.posted_by}
 - Available seats: ${ride.available_seats}
 - Phone: ${ride.phone || 'Not provided'}
+- Driver: ${ride.driver_id === userID ? 'You' : ride.profiles?.full_name || 'Unknown'}
+${ride.user_signup_status ? `- Your booking status: ${ride.user_signup_status}` : ''}
 - Signups: ${ride.ride_signups?.length || 0} people
 ${ride.ride_signups?.map(signup => `  - ${signup.profiles?.full_name || 'Unknown'}: ${signup.booked}`).join('\n') || ''}
 `).join('\n')}
-
-
 
 App Features Context:
 - This is SlugCruz, a carpooling app for UCSC students
@@ -141,8 +164,7 @@ App Features Context:
 - Riders can book driver rides or schedule their own rides for drivers to book
 - The app has messaging functionality for ride coordination
 - Users can filter rides by location and date
-`
-;
+`;
 
       const prompt = `You are a helpful assistant for SlugCruz, a carpooling app for UCSC students. 
 
@@ -150,10 +172,7 @@ ${userContext}
 
 User's question: "${userMessage}"
 
-Please provide a helpful, friendly response. Keep it concise but informative. If the user asks about a driver, 
-driver story or what an experience with a driver might be like,
-write a short, friendly story (3-5 sentences) about what a ride with them might feel like using the reviews provided in: ${reviewsText} for the correct driver
-Focus on the experience, not just repeating reviews. Don't ask them further questions, just provide the story`;
+Please provide a helpful, friendly response. If the user asks about their rides, bookings, or app features, use the provided context. If you don't have specific information, guide them on how to find it in the app. Keep responses concise but informative.`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -161,7 +180,6 @@ Focus on the experience, not just repeating reviews. Don't ask them further ques
     } catch (error) {
       console.error('Error generating chatbot response:', error);
       return "I'm sorry, I'm having trouble responding right now. Please try again in a moment.";
-    
     }
   };
 
@@ -181,12 +199,14 @@ Focus on the experience, not just repeating reviews. Don't ask them further ques
 
     try {
       const botResponse = await generateChatbotResponse(userMessage.text);
+      
       const botMessage = {
         id: (Date.now() + 1).toString(),
         text: botResponse,
         isUser: false,
         timestamp: new Date(),
       };
+
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -248,7 +268,7 @@ Focus on the experience, not just repeating reviews. Don't ask them further ques
             style={styles.textInput}
             value={inputText}
             onChangeText={setInputText}
-            placeholder="Ask me about your rides, the app, or a driver story..."
+            placeholder="Ask me about your rides or the app..."
             multiline
             maxLength={500}
           />
