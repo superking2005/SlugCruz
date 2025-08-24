@@ -16,6 +16,9 @@ import { useMode } from '../../context/ModeContext';
 import { supabase } from '../../lib/supabase';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+// ✅ Import reviews.json
+import reviewsData from '../../assets/reviews.json';
+
 // Gemini API configuration
 const GEMINI_CONFIG = {
   API_KEY: 'AIzaSyCCTaVAN7ZY30tasHeaTSyuQU8QGi3xr5Q',
@@ -44,6 +47,8 @@ export default function ChatbotScreen() {
 📋 Details about rides you've posted
 ❓ General help with the app
 🔄 Switching between driver and rider modes
+
+You can also ask me for a story about a driver! (e.g. "story about Alice")
 
 What would you like to know?`,
     isUser: false,
@@ -101,11 +106,13 @@ What would you like to know?`,
     }
   };
 
+  // ✅ Unified chatbot response (handles both general + driver story)
   const generateChatbotResponse = async (userMessage) => {
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: GEMINI_CONFIG.MODEL });
 
-      // Create context about the user and their rides
+      const reviews = reviewsData
+      const reviewsText = Object.entries(reviews).map(([driver, texts]) => {return texts.map(t => `Driver ${driver}: "${t}"`).join('\n');}).join('\n');
       const userContext = `
 User Profile:
 - Name: ${userProfile?.full_name || 'Not set'}
@@ -125,6 +132,8 @@ ${userRides.map(ride => `
 ${ride.ride_signups?.map(signup => `  - ${signup.profiles?.full_name || 'Unknown'}: ${signup.booked}`).join('\n') || ''}
 `).join('\n')}
 
+
+
 App Features Context:
 - This is SlugCruz, a carpooling app for UCSC students
 - Users can switch between Driver and Rider modes
@@ -132,7 +141,8 @@ App Features Context:
 - Riders can book driver rides or schedule their own rides for drivers to book
 - The app has messaging functionality for ride coordination
 - Users can filter rides by location and date
-`;
+`
+;
 
       const prompt = `You are a helpful assistant for SlugCruz, a carpooling app for UCSC students. 
 
@@ -140,7 +150,10 @@ ${userContext}
 
 User's question: "${userMessage}"
 
-Please provide a helpful, friendly response. If the user asks about their rides, bookings, or app features, use the provided context. If you don't have specific information, guide them on how to find it in the app. Keep responses concise but informative.`;
+Please provide a helpful, friendly response. Keep it concise but informative. If the user asks about a driver, 
+driver story or what an experience with a driver might be like,
+write a short, friendly story (3-5 sentences) about what a ride with them might feel like using the reviews provided in: ${reviewsText} for the correct driver
+Focus on the experience, not just repeating reviews. Don't ask them further questions, just provide the story`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -148,6 +161,7 @@ Please provide a helpful, friendly response. If the user asks about their rides,
     } catch (error) {
       console.error('Error generating chatbot response:', error);
       return "I'm sorry, I'm having trouble responding right now. Please try again in a moment.";
+    
     }
   };
 
@@ -167,14 +181,12 @@ Please provide a helpful, friendly response. If the user asks about their rides,
 
     try {
       const botResponse = await generateChatbotResponse(userMessage.text);
-      
       const botMessage = {
         id: (Date.now() + 1).toString(),
         text: botResponse,
         isUser: false,
         timestamp: new Date(),
       };
-
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -236,7 +248,7 @@ Please provide a helpful, friendly response. If the user asks about their rides,
             style={styles.textInput}
             value={inputText}
             onChangeText={setInputText}
-            placeholder="Ask me about your rides or the app..."
+            placeholder="Ask me about your rides, the app, or a driver story..."
             multiline
             maxLength={500}
           />
