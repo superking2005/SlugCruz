@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, Car, Armchair, MessageCircle, User } from 'lucide-react-native';
+import { Home, Car, Armchair, MessageCircle, User, Bot } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
@@ -71,6 +71,16 @@ export default function TabLayout() {
             <Car size={size} color={color} />
           ),
           href: isDriver ? undefined : null,
+        }}
+      />
+      <Tabs.Screen
+        name="chatbot"
+        options={{
+          title: 'Assistant',
+          tabBarIcon: ({ size, color }) => (
+            <Bot size={size} color={color} />
+          ),
+          href: undefined,
         }}
       />
       <Tabs.Screen
